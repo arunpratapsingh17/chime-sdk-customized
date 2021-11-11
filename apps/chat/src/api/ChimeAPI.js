@@ -227,6 +227,7 @@ async function listChannelMemberships(channelArn, userId) {
     );
   });
   const response = await request.promise();
+  // console.log(response);
   return response.ChannelMemberships;
 }
 
@@ -237,7 +238,7 @@ async function createChannel(appInstanceArn, metadata, name, mode, privacy, user
     Metadata: metadata,
     Name: name,
     Mode: mode,
-    Privacy: privacy
+    Privacy: privacy,
   };
 
   const request = (await chimeClient()).createChannel(params);
@@ -249,6 +250,16 @@ async function createChannel(appInstanceArn, metadata, name, mode, privacy, user
   const response = await request.promise();
   return response.ChannelArn;
 }
+
+async function createRoom(){
+  console.log("Create room called");
+  const params={
+    Name:"New Room 1"
+  }
+  const request = (await chimeClient()).createRoom(params);
+  const response = await request.promise();
+  console.log(response);
+} 
 
 async function describeChannel(channelArn, userId) {
   console.log('describeChannel called');
@@ -269,7 +280,11 @@ async function describeChannel(channelArn, userId) {
 
 async function updateChannel(channelArn, name, mode, metadata, userId) {
   console.log('updateChannel called');
-
+  console.log(`Channelarn is${channelArn}`);
+  console.log(`name is${name}`);
+  console.log(`mode is${mode}`);
+  console.log(`metadata is${metadata}`);
+  console.log(`userId is${userId}`);
   const params = {
     ChannelArn: channelArn,
     Name: name,
@@ -504,5 +519,6 @@ export {
   createMeeting,
   createAttendee,
   createGetAttendeeCallback,
-  endMeeting
+  endMeeting,
+  createRoom
 };

@@ -28,6 +28,7 @@ export const AddMemberModal = ({
   channel,
   handlePickerChange,
   onSubmit,
+  notGroup,
   members,
 }) => {
   const [usersList, setUsersList] = useState([]);
@@ -109,7 +110,7 @@ export const AddMemberModal = ({
 
   return (
     <Modal onClose={onClose} className="add-members">
-      <ModalHeader title={`Add Members to ${channel.Name}`} />
+      {notGroup?(<ModalHeader title={`Add Members to ${channel.Name}`} />):(<ModalHeader title="Select the contact to chat" />)}
       <ModalBody className="modal-body">
         <ContactPicker onChange={handlePickerChange} options={nonmembers} />
       </ModalBody>

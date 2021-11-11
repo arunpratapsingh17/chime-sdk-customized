@@ -22,7 +22,7 @@ import {
   useChatMessagingState,
 } from '../../providers/ChatMessagesProvider';
 import { useAuthContext } from '../../providers/AuthProvider';
-
+import {createRoom} from "../../api/ChimeAPI"
 const Channels = () => {
   const currentTheme = useTheme();
 
@@ -43,6 +43,12 @@ const Channels = () => {
     channelList,
     hasMembership,
   } = useChatChannelState();
+
+  const roomButton=(e)=>{
+    e.preventDefault()
+    console.log("Room button clicked");
+    createRoom();
+  }
 
   const handleUserNameCopyClick = (_e) => {
     // Create new element
@@ -153,6 +159,7 @@ const Channels = () => {
           <div className="placeholder">Welcome</div>
         )}
       </Cell>
+
     </Grid>
   );
 };

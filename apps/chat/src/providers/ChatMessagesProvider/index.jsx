@@ -92,6 +92,8 @@ const MessagingProvider = ({ children }) => {
 
   const messagesProcessor = async (message) => {
     const messageType = message?.headers['x-amz-chime-event-type'];
+    //Her changes have been done.
+    console.log(message);
     const record = JSON.parse(message?.payload);
     console.log('Incoming Message', message);
     switch (messageType) {

@@ -18,6 +18,7 @@ import {
 const ModalManager = ({
   modal,
   setModal,
+  notGroup,
   activeChannel,
   meetingInfo,
   userId,
@@ -48,6 +49,7 @@ const ModalManager = ({
           onClose={() => setModal('')}
           channel={activeChannel}
           onSubmit={onAddMember}
+          notGroup={notGroup}
           handlePickerChange={handlePickerChange}
           members={activeChannelMemberships}
         />

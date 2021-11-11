@@ -56,6 +56,7 @@ import ModalManager from './ModalManager';
 import routes from '../../constants/routes';
 
 import './ChannelsWrapper.css';
+import ChannelsDisplay from '../../components/ChannelsDisplay';
 
 const ChannelsWrapper = () => {
   const history = useHistory();
@@ -68,6 +69,7 @@ const ChannelsWrapper = () => {
   const theme = useTheme();
   const userPermission = useUserPermission();
   const { userId } = useAuthContext().member;
+  const userData = useAuthContext().member;
   const member = useAuthContext().member;
   const messagingUserArn = `${appConfig.appInstanceArn}/user/${userId}`;
   const {
@@ -87,6 +89,43 @@ const ChannelsWrapper = () => {
   } = useChatChannelState();
   const { setMessages } = useChatMessagingState();
   const { setAppMeetingInfo } = useAppState();
+  //New work by Arun
+  const [isOneToOne,setIsOneToOne] = useState(false);
+  const [otherPersonName,setOtherPersonName] = useState("")
+  const [name, setName] = useState("Another New Channel");
+  const [privacy, setPrivacy] = useState('PRIVATE');
+  const [mode, setMode] = useState('UNRESTRICTED');
+  const [updatedChannelList,setUpdatedChannelList] = useState([])
+  // var dict={}
+  // useEffect(()=>{
+  //   if(channelList.length!=0){
+  //     // console.log(channelList);
+  //     let array=[];
+  //     channelList.map((channel)=>{
+  //       console.log(channel);
+  //       const channelMetaData = JSON.parse(channel?.Metadata);
+  //       // console.log(channelMetaData);
+  //       if(channelMetaData?.isOneToOne){
+  //         async function getOthermembersData(){
+  //           console.log(channel);
+  //           console.log(channel?.ChannelArn);
+  //           const res = await listChannelMemberships(channel?.ChannelArn, userId);
+  //           console.log(channel);
+  //           channel["members"]="Jatin";
+  //           dict[channel?.ChannelArn]=res;
+  //           //channel=Object.assign({members:res},channel);
+  //           // channel={"members":res,...channel}
+  //           console.log(channel);
+  //         }
+  //         getOthermembersData();
+  //       }
+  //       array.push(channel)
+  //     })
+  //     setUpdatedChannelList(array)
+  //     console.log(updatedChannelList);
+  //   }
+  // },[channelList])
+
 
   // get all channels
   useEffect(() => {
@@ -123,6 +162,7 @@ const ChannelsWrapper = () => {
       setModal('JoinMeeting');
     }
   }, [meetingInfo]);
+
 
   const getBanList = async () => {
     const banListResponse = await listChannelBans(
@@ -179,16 +219,33 @@ const ChannelsWrapper = () => {
         },
       });
     } else {
-      const channelArn = await createChannel(
-        appConfig.appInstanceArn,
-        null,
-        newName,
-        mode,
-        privacy,
-        userId
-      );
+      if(isOneToOne){
+        const metaData = JSON.stringify({isOneToOne:true});
+        console.log(metaData);
+        var channelArn = await createChannel(
+          appConfig.appInstanceArn,
+          metaData,
+          newName,
+          mode,
+          privacy,
+          userId,
+        );
+      }else{
+        const metaData = JSON.stringify({isOneToOne:false});
+        console.log(metaData);
+        var channelArn = await createChannel(
+          appConfig.appInstanceArn,
+          metaData,
+          newName,
+          mode,
+          privacy,
+          userId,
+        );
+      }
       if (channelArn) {
+        console.log(channelArn);
         const channel = await describeChannel(channelArn, userId);
+        // console.log(channel);
         setModal('');
         if (channel) {
           setChannelList([...channelList, channel]);
@@ -200,8 +257,10 @@ const ChannelsWrapper = () => {
               autoClose: true,
             },
           });
+          console.log(channelArn);
           setActiveChannel(channel);
           channelIdChangeHandler(channel.ChannelArn);
+          setModal('AddMembers')
         } else {
           dispatch({
             type: 0,
@@ -368,16 +427,40 @@ const ChannelsWrapper = () => {
       memberships.push({ Member: membership });
       setActiveChannelMemberships(memberships);
       channelIdChangeHandler(activeChannel.ChannelArn);
-      dispatch({
-        type: 0,
-        payload: {
-          message: `New ${selectedMember.label} successfully added to ${activeChannel.Name}`,
-          severity: 'success',
-          autoClose: true,
-        },
-      });
+      console.log(selectedMember);
+      const name= selectedMember.label;
+      console.log(isOneToOne);
+      if(isOneToOne){
+        dispatch({
+          type: 0,
+          payload: {
+            message: `New ${selectedMember.label} successfully added to ${activeChannel.Name}`,
+            severity: 'success',
+            autoClose: true,
+          },
+        });
+        try{  
+          console.log(activeChannel.ChannelArn);
+          console.log(userId);
+          const metaData = JSON.stringify({isOneToOne:true});
+          await updateChannel(activeChannel.ChannelArn,name,mode,metaData,userId);
+        }catch(e){
+          console.log(e);
+        }
+      }
+      else{
+        dispatch({
+          type: 0,
+          payload: {
+            message: `New ${selectedMember.label} successfully added to ${activeChannel.Name}`,
+            severity: 'success',
+            autoClose: true,
+          },
+        });
+      }
       setModal('');
-    } catch {
+    } catch(e) {
+      console.log(e);
       dispatch({
         type: 0,
         payload: {
@@ -756,11 +839,16 @@ const ChannelsWrapper = () => {
     return isRestricted ? noMeetingRestrictedMemberActions : noMeetingUnrestrictedMemberActions;
   };
 
+  
+    
+  
+ console.log(updatedChannelList);
   return (
     <>
       <ModalManager
         modal={modal}
         setModal={setModal}
+        isOneToOne={isOneToOne}
         activeChannel={activeChannel}
         meetingInfo={meetingInfo}
         userId={userId}
@@ -783,6 +871,15 @@ const ChannelsWrapper = () => {
       <div className="channel-list-wrapper">
         <div className="channel-list-header">
           <div className="channel-list-header-title">Channels</div>
+          <button 
+          onClick={(e)=>{
+            // e.preventDefault();
+            // setName("New Channel");
+            onCreateChannel(e,name,mode,privacy);
+            setIsOneToOne(true)
+            // setModal('AddMembers')
+          }}
+          >Direct Chat</button>
           <IconButton
             className="create-channel-button channel-options"
             onClick={() => setModal('NewChannel')}
@@ -794,20 +891,60 @@ const ChannelsWrapper = () => {
             padding: '8px',
           }}
         >
-          {channelList.map((channel) => (
-            <ChannelItem
-              key={channel.ChannelArn}
-              name={channel.Name}
-              actions={loadUserActions(userPermission.role, channel)}
-              isSelected={channel.ChannelArn === activeChannel.ChannelArn}
-              onClick={e => {
-                e.stopPropagation();
-                channelIdChangeHandler(channel.ChannelArn);
-              }}
-              unread={unreadChannels.includes(channel.ChannelArn)}
-              unreadBadgeLabel="New"
-            />
-          ))}
+        {channelList.map( (channel) => {
+          console.log(channel);
+          // deleteChannel(channel.ChannelArn,userId);
+          const channelMetaData = JSON.parse(channel?.Metadata);
+          // console.log(channelMetaData);
+          if (channelMetaData?.isOneToOne) {
+              // let otherPerson;
+              // console.log(JSON.parse(JSON.stringify(channel)));
+              // console.log(typeof channel);
+              // console.log(JSON.stringify(Object.keys(channel)));
+              // console.log(dict);
+              // console.log(dict[channel.ChannelArn]);
+              // console.log(channel.members);
+              // console.log(channel.Name);
+              // channel?.members?.map((res)=>{
+              //   console.log("dnwjndjweub");
+              //   console.log(res);
+              //   if (res[0]?.Member?.Name == userData.username) {
+              //     console.log("I am this user", res[0].Member.Name);
+              //     otherPerson = res[1]?.Member?.Name;
+              //   } else if (res[1]?.Member?.Name == userData.username) {
+              //     console.log("I am this user", res[1]?.Member?.Name);
+              //     otherPerson = res[0]?.Member?.Name;
+              //   }
+              // })
+              // console.log(otherPerson);
+              // console.log(channel.ChannelArn);
+              return <ChannelsDisplay 
+              channel={channel} 
+              userId={userId} 
+              userData={userData} 
+              loadUserActions={loadUserActions} 
+              userPermission={userPermission}
+              activeChannel={activeChannel}
+              channelIdChangeHandler={channelIdChangeHandler}
+              unreadChannels={unreadChannels}
+              />;
+            }
+            else {
+              return <ChannelItem
+                  key={channel.ChannelArn}
+                  name={channel.Name}
+                  actions={loadUserActions(userPermission.role, channel)}
+                  isSelected={channel.ChannelArn === activeChannel.ChannelArn}
+                  onClick={e => {
+                      e.stopPropagation();
+                      channelIdChangeHandler(channel.ChannelArn);
+                  }}
+                  unread={unreadChannels.includes(channel.ChannelArn)}
+                  unreadBadgeLabel="New"
+              >
+              </ChannelItem>;
+          }
+      })}
         </ChannelList>
       </div>
     </>

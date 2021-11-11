@@ -31,7 +31,7 @@ export const EditChannelModal = ({ onClose, channel, userId }) => {
   const onSubmit = (e) => {
     e.preventDefault();
     try {
-      updateChannel(channel.ChannelArn, newName, newMode, userId);
+      updateChannel(channel.ChannelArn, newName, newMode,"{isOneToOne:false}", userId);
       dispatch({
         type: 0,
         payload: {
@@ -40,7 +40,8 @@ export const EditChannelModal = ({ onClose, channel, userId }) => {
           autoClose: true,
         },
       });
-    } catch {
+    } catch(e) {
+      console.log(e);
       dispatch({
         type: 0,
         payload: {
